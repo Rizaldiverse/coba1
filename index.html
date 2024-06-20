@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-versi 7
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hitung Ongkos Kirim</title>
+    <title>Shipping Cost Calculator</title>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
     <style>
@@ -59,38 +58,84 @@ versi 7
             margin-top: 20px;
             color: #333;
         }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            padding-top: 60px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Hitung Ongkos Kirim</h1>
+        <h1>Shipping Cost Calculator</h1>
         <form id="shippingForm">
-            <label for="nama">Nama:</label>
-            <input type="text" id="nama" name="nama" required>
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
 
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" required>
 
-            <label for="nomorWhatsapp">Nomor WhatsApp:</label>
-            <input type="text" id="nomorWhatsapp" name="nomorWhatsapp" required>
+            <label for="whatsapp">WhatsApp Number:</label>
+            <input type="text" id="whatsapp" name="whatsapp" required>
 
-            <label for="ukuranBanner">Ukuran Banner (cm):</label>
-            <select id="ukuranBanner" name="ukuranBanner" required>
+            <label for="bannerSize">Banner Size (cm):</label>
+            <select id="bannerSize" name="bannerSize" required>
                 <option value="100x200">100x200</option>
                 <option value="200x300">200x300</option>
                 <option value="300x400">300x400</option>
             </select>
 
-            <label for="kota">Kota:</label>
-            <select id="kota" name="kota" required>
-                <!-- Kota akan diisi secara dinamis dari API RajaOngkir -->
+            <label for="province">Province:</label>
+            <select id="province" name="province" required>
+                <!-- Provinces will be dynamically populated from the RajaOngkir API -->
             </select>
 
-            <button type="button" onclick="calculateTotalCost()">Hitung Ongkos Kirim</button>
+            <label for="city">City:</label>
+            <select id="city" name="city" required>
+                <!-- Cities will be dynamically populated from the RajaOngkir API -->
+            </select>
+
+            <button type="button" onclick="calculateTotalCost()">Calculate Shipping Cost</button>
 
             <div class="total" id="total"></div>
             <div class="shippingCost" id="shippingCost"></div>
         </form>
+    </div>
+
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Order Summary</h2>
+            <p id="summary"></p>
+        </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -98,8 +143,8 @@ versi 7
     <script>
         const apiKey = 'aa01e82b3abbdd4958a0c3857d0a1a97';
 
-        async function getKota() {
-            const url = `https://api.rajaongkir.com/starter/city`;
+        async function getProvinces() {
+            const url = `https://api.rajaongkir.com/starter/province`;
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -111,7 +156,20 @@ versi 7
             return data.rajaongkir.results;
         }
 
-        async function getOngkosKirim(origin, destination, weight) {
+        async function getCities(provinceId) {
+            const url = `https://api.rajaongkir.com/starter/city?province=${provinceId}`;
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'key': apiKey
+                }
+            });
+            const data = await response.json();
+            return data.rajaongkir.results;
+        }
+
+        async function getShippingCost(origin, destination, weight) {
             const url = `https://api.rajaongkir.com/starter/cost`;
             const response = await fetch(url, {
                 method: 'POST',
@@ -130,35 +188,92 @@ versi 7
             return data.rajaongkir.results[0].costs[0].cost[0].value;
         }
 
-        async function populateKotaDropdown() {
-            const kotaDropdown = document.getElementById('kota');
-            const kotas = await getKota();
+        async function populateProvinceDropdown() {
+            const provinceDropdown = document.getElementById('province');
+            const provinces = await getProvinces();
 
-            kotas.forEach(kota => {
+            provinces.forEach(province => {
                 const option = document.createElement('option');
-                option.value = kota.city_id;
-                option.text = kota.city_name;
-                kotaDropdown.add(option);
+                option.value = province.province_id;
+                option.text = province.province;
+                provinceDropdown.add(option);
             });
 
-            $('#kota').select2();
+            $('#province').select2();
+        }
+
+        async function populateCityDropdown() {
+            const cityDropdown = document.getElementById('city');
+            cityDropdown.innerHTML = ''; // Clear existing options
+            const provinceId = document.getElementById('province').value;
+            const cities = await getCities(provinceId);
+
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.city_id;
+                option.text = city.city_name;
+                cityDropdown.add(option);
+            });
+
+            $('#city').select2();
         }
 
         async function calculateTotalCost() {
-            const origin = '501'; // Kode kota/kabupaten asal (misalnya, Semarang)
-            const destination = document.getElementById('kota').value;
-            const weight = 1000; // Berat paket dalam gram (disesuaikan dengan berat aktual)
-            const productCost = 20000; // Contoh harga produk (disesuaikan dengan harga aktual)
+            const origin = '501'; // Origin city code (e.g., Semarang)
+            const destination = document.getElementById('city').value;
+            const weight = 1000; // Package weight in grams (adjust as necessary)
+            const productCost = 20000; // Example product price (adjust as necessary)
 
-            const shippingCost = await getOngkosKirim(origin, destination, weight);
+            const shippingCost = await getShippingCost(origin, destination, weight);
             const totalCost = productCost + shippingCost;
 
             document.getElementById('total').innerText = `Total: Rp ${totalCost}`;
-            document.getElementById('shippingCost').innerText = `Ongkos Kirim: Rp ${shippingCost}`;
+            document.getElementById('shippingCost').innerText = `Shipping Cost: Rp ${shippingCost}`;
+
+            showModal();
         }
 
-        // Panggil fungsi untuk mengisi dropdown kota ketika halaman dimuat
-        document.addEventListener('DOMContentLoaded', populateKotaDropdown);
+        function showModal() {
+            const modal = document.getElementById("myModal");
+            const span = document.getElementsByClassName("close")[0];
+
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const whatsapp = document.getElementById("whatsapp").value;
+            const bannerSize = document.getElementById("bannerSize").value;
+            const province = document.getElementById("province").options[document.getElementById("province").selectedIndex].text;
+            const city = document.getElementById("city").options[document.getElementById("city").selectedIndex].text;
+            const total = document.getElementById("total").innerText;
+            const shippingCost = document.getElementById("shippingCost").innerText;
+
+            document.getElementById("summary").innerHTML = `
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>WhatsApp Number:</strong> ${whatsapp}</p>
+                <p><strong>Banner Size:</strong> ${bannerSize}</p>
+                <p><strong>Province:</strong> ${province}</p>
+                <p><strong>City:</strong> ${city}</p>
+                <p>${total}</p>
+                <p>${shippingCost}</p>
+            `;
+
+            modal.style.display = "block";
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateProvinceDropdown();
+            document.getElementById('province').addEventListener('change', populateCityDropdown);
+        });
     </script>
 </body>
 </html>
