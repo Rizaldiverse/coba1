@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-versi 4
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hitung Ongkos Kirim</title>
+    <title>2 Hitung Ongkos Kirim</title>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" />
     <style>
@@ -97,7 +96,6 @@ versi 4
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         const apiKey = 'aa01e82b3abbdd4958a0c3857d0a1a97';
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbw9kayMEWKvdmvU9YJZk4rssMLRwOtPGfcxzXDVqQIXZnPe5az6IWTc8F7pOoZwZ9aazw/exec';
 
         async function getKota() {
             const url = `https://api.rajaongkir.com/starter/city`;
@@ -156,34 +154,6 @@ versi 4
 
             document.getElementById('total').innerText = `Total: Rp ${totalCost}`;
             document.getElementById('shippingCost').innerText = `Ongkos Kirim: Rp ${shippingCost}`;
-
-            // Kirim data ke Google Sheets
-            const formData = {
-                nama: document.getElementById('nama').value,
-                email: document.getElementById('email').value,
-                nomorWhatsapp: document.getElementById('nomorWhatsapp').value,
-                ukuranBanner: document.getElementById('ukuranBanner').value,
-                kota: document.getElementById('kota').selectedOptions[0].text,
-                ongkosKirim: shippingCost,
-                totalBiaya: totalCost
-            };
-
-            fetch(scriptURL, {
-                method: 'POST',
-                body: JSON.stringify(formData),
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.status === 'success') {
-                    alert('Data berhasil disimpan!');
-                } else {
-                    alert('Terjadi kesalahan: ' + result.message);
-                }
-            })
-            .catch(error => console.error('Error:', error));
         }
 
         // Panggil fungsi untuk mengisi dropdown kota ketika halaman dimuat
