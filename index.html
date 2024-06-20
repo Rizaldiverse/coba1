@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-VERSI 1
+versi 4
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -86,11 +86,6 @@ VERSI 1
                 <!-- Kota akan diisi secara dinamis dari API RajaOngkir -->
             </select>
 
-            <label for="kecamatan">Kecamatan:</label>
-            <select id="kecamatan" name="kecamatan" required>
-                <!-- Kecamatan akan diisi secara dinamis dari API RajaOngkir -->
-            </select>
-
             <button type="button" onclick="calculateTotalCost()">Hitung Ongkos Kirim</button>
 
             <div class="total" id="total"></div>
@@ -106,19 +101,6 @@ VERSI 1
 
         async function getKota() {
             const url = `https://api.rajaongkir.com/starter/city`;
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'key': apiKey
-                }
-            });
-            const data = await response.json();
-            return data.rajaongkir.results;
-        }
-
-        async function getKecamatan(cityId) {
-            const url = `https://api.rajaongkir.com/starter/subdistrict?city=${cityId}`;
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -163,25 +145,9 @@ VERSI 1
             $('#kota').select2();
         }
 
-        async function populateKecamatanDropdown(cityId) {
-            const kecamatanDropdown = document.getElementById('kecamatan');
-            const kecamatans = await getKecamatan(cityId);
-
-            kecamatanDropdown.innerHTML = ''; // Kosongkan dropdown
-
-            kecamatans.forEach(kecamatan => {
-                const option = document.createElement('option');
-                option.value = kecamatan.subdistrict_id;
-                option.text = kecamatan.subdistrict_name;
-                kecamatanDropdown.add(option);
-            });
-
-            $('#kecamatan').select2();
-        }
-
         async function calculateTotalCost() {
             const origin = '501'; // Kode kota/kabupaten asal (misalnya, Semarang)
-            const destination = document.getElementById('kecamatan').value;
+            const destination = document.getElementById('kota').value;
             const weight = 1000; // Berat paket dalam gram (disesuaikan dengan berat aktual)
             const productCost = 20000; // Contoh harga produk (disesuaikan dengan harga aktual)
 
@@ -198,7 +164,6 @@ VERSI 1
                 nomorWhatsapp: document.getElementById('nomorWhatsapp').value,
                 ukuranBanner: document.getElementById('ukuranBanner').value,
                 kota: document.getElementById('kota').selectedOptions[0].text,
-                kecamatan: document.getElementById('kecamatan').selectedOptions[0].text,
                 ongkosKirim: shippingCost,
                 totalBiaya: totalCost
             };
@@ -223,12 +188,6 @@ VERSI 1
 
         // Panggil fungsi untuk mengisi dropdown kota ketika halaman dimuat
         document.addEventListener('DOMContentLoaded', populateKotaDropdown);
-
-        // Tambahkan event listener untuk mengisi dropdown kecamatan ketika kota dipilih
-        document.getElementById('kota').addEventListener('change', function() {
-            const cityId = this.value;
-            populateKecamatanDropdown(cityId);
-        });
     </script>
 </body>
 </html>
