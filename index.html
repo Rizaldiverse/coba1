@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+VERSI 2
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,7 +64,7 @@
 <body>
     <div class="container">
         <h1>Hitung Ongkos Kirim</h1>
-        <form>
+        <form id="shippingForm">
             <label for="nama">Nama:</label>
             <input type="text" id="nama" name="nama" required>
 
@@ -188,4 +189,46 @@
             const totalCost = productCost + shippingCost;
 
             document.getElementById('total').innerText = `Total: Rp ${totalCost}`;
-            document.getElementById('shippingCost').innerText = `Ongkos Kirim: Rp ${
+            document.getElementById('shippingCost').innerText = `Ongkos Kirim: Rp ${shippingCost}`;
+
+            // Kirim data ke Google Sheets
+            const formData = {
+                nama: document.getElementById('nama').value,
+                email: document.getElementById('email').value,
+                nomorWhatsapp: document.getElementById('nomorWhatsapp').value,
+                ukuranBanner: document.getElementById('ukuranBanner').value,
+                kota: document.getElementById('kota').selectedOptions[0].text,
+                kecamatan: document.getElementById('kecamatan').selectedOptions[0].text,
+                ongkosKirim: shippingCost,
+                totalBiaya: totalCost
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                body: JSON.stringify(formData),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert('Data berhasil disimpan!');
+                } else {
+                    alert('Terjadi kesalahan: ' + result.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        // Panggil fungsi untuk mengisi dropdown kota ketika halaman dimuat
+        document.addEventListener('DOMContentLoaded', populateKotaDropdown);
+
+        // Tambahkan event listener untuk mengisi dropdown kecamatan ketika kota dipilih
+        document.getElementById('kota').addEventListener('change', function() {
+            const cityId = this.value;
+            populateKecamatanDropdown(cityId);
+        });
+    </script>
+</body>
+</html>
